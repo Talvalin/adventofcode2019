@@ -27,12 +27,11 @@ def find_valid_password_count():
     password_min = 172851
     password_max = 675869
 
-    valid_password_count = 0
-    for x in range(password_min, password_max):
-        if test_password_v2(x):
-            valid_password_count += 1
-    
-    print(valid_password_count)
+    total_part1 = sum([1 for x in range(password_min, password_max) if test_password(x)])
+    total_part2 = sum([1 for x in range(password_min, password_max) if test_password_v2(x)])
+
+    print("Part 1 total: ", total_part1)
+    print("Part 2 total: ", total_part2)
 
 def main():
     find_valid_password_count()
