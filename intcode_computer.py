@@ -11,8 +11,14 @@ class IntcodeComputer:
         self.last_output = None
         self.status = status_flags[0]
     
+    def add_input(self, value):
+        self.input.append(value)
+
     def get_next_input(self):
-        return self.input.pop(0)
+        if self.input:
+            return self.input.pop(0)
+        else:
+            return None
 
     def get_parameter_value(self, parameter, mode):
         value = 0
@@ -47,7 +53,8 @@ class IntcodeComputer:
             opcode = self.process_opcode(self.intcode[self.pointer])
             self.run_instruction(opcode)
 
-        if self.status == 'HALTED':
+        if self.status in ('HALTED', 'WAITING'):
+            # print("Current instruction pointer: ", self.pointer)
             return self.last_output
 
     def run_instruction(self, opcode):
@@ -64,8 +71,14 @@ class IntcodeComputer:
         elif current_opcode == 3:
             # get parameter
             parameter = self.intcode[self.pointer+1]
-            self.intcode[parameter] = self.get_next_input()
-            self.pointer += 2
+            next_input = self.get_next_input()
+            if next_input is None:
+                # set status to waiting and do not advance pointer!
+                self.status = status_flags[2]
+            else:
+                # we have input, so advance pointer and continue processing
+                self.intcode[parameter] = next_input
+                self.pointer += 2
         elif current_opcode == 4:
             # get parameter
             parameter1 = self.intcode[self.pointer+1]
