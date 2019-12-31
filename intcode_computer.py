@@ -1,5 +1,7 @@
 import copy
 
+status_flags = ['WORKING', 'HALTED', 'WAITING', 'ERROR']
+
 class IntcodeComputer:
     def __init__(self, intcode=None, input=None, pointer=0, debug=False):
         self.intcode = copy.deepcopy(intcode)
@@ -7,6 +9,7 @@ class IntcodeComputer:
         self.pointer = pointer
         self.debug = debug
         self.last_output = None
+        self.status = status_flags[0]
     
     def get_next_input(self):
         return self.input.pop(0)
@@ -39,15 +42,13 @@ class IntcodeComputer:
     def execute(self):
         if self.debug:
            print("Current pointer: ", self.pointer)
-        while True:
+        while self.status == 'WORKING':
             # get opcode
             opcode = self.process_opcode(self.intcode[self.pointer])
-            
-            if opcode[0] == 99:
-                return self.last_output
-            else:
-                # run_instruction
-                self.run_instruction(opcode)
+            self.run_instruction(opcode)
+
+        if self.status == 'HALTED':
+            return self.last_output
 
     def run_instruction(self, opcode):
         current_opcode = opcode[0]
@@ -58,7 +59,9 @@ class IntcodeComputer:
         if self.debug:
             print("Opcode: ", current_opcode)
             print("Current instruction pointer: ", self.pointer)
-        if current_opcode == 3:
+        if current_opcode == 99:
+            self.status = status_flags[1]
+        elif current_opcode == 3:
             # get parameter
             parameter = self.intcode[self.pointer+1]
             self.intcode[parameter] = self.get_next_input()

@@ -117,6 +117,8 @@ class IntCode_Computer_Tests(unittest.TestCase):
         self.assertEqual(max_thruster_signal, 65210)
         self.assertEqual(max_phase_settings, (1,0,4,3,2))
 
-
+    # def test_max_thruster_feedback_fixed_phase(self):
+    #     intcode = [3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5]
+        
 if __name__ == "__main__":
     unittest.main()
