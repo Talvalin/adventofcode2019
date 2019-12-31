@@ -1,7 +1,7 @@
 import intcode_computer as IntcodeComputer
 
 def load_intcode():
-    with open('/Users/Lal/src/adventofcode2019/day05_input.txt') as input:
+    with open('./day05_input.txt') as input:
         return [int(x) for x in input.read().strip('\n').split(',')]
 
 def main():
