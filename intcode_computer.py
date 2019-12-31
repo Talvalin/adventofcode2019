@@ -7,7 +7,9 @@ class IntcodeComputer:
         self.pointer = pointer
         self.debug = debug
         self.last_output = None
-        
+    
+    def get_next_input(self):
+        return self.input.pop(0)
 
     def get_parameter_value(self, parameter, mode):
         value = 0
@@ -59,14 +61,15 @@ class IntcodeComputer:
         if current_opcode == 3:
             # get parameter
             parameter = self.intcode[self.pointer+1]
-            self.intcode[parameter] = self.input
+            self.intcode[parameter] = self.get_next_input()
             self.pointer += 2
         elif current_opcode == 4:
             # get parameter
             parameter1 = self.intcode[self.pointer+1]
             parameter1_value = self.get_parameter_value(parameter1, parameter1_mode)
             self.last_output = parameter1_value
-            print("Test output: ", parameter1_value)
+            if self.debug:
+                print("Test output: ", parameter1_value)
             self.pointer += 2
         elif current_opcode == 5:
             parameter1, parameter2 = self.intcode[self.pointer+1:self.pointer+3]
