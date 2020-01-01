@@ -10,6 +10,20 @@ class IntcodeComputer:
         self.debug = debug
         self.last_output = None
         self.status = status_flags[0]
+
+        self.dispatch_map = {
+            1: self.AddInstruction,
+            2: self.MultiplyInstruction,
+            3: self.InputInstruction,
+            4: self.OutputInstruction,
+            5: self.JumpIfTrueInstruction,
+            6: self.JumpIfFalseInstruction,
+            7: self.LessThanInstruction,
+            8: self.EqualsInstruction,
+            99: self.HaltInstruction
+        }
+
+        self.current_opcode = None
     
     def add_input(self, value):
         self.input.append(value)
@@ -46,75 +60,78 @@ class IntcodeComputer:
         return processed_opcode
 
     def execute(self):
-        if self.debug:
-           print("Current pointer: ", self.pointer)
         while self.status == 'WORKING':
             # get opcode
-            opcode = self.process_opcode(self.intcode[self.pointer])
-            self.run_instruction(opcode)
-
+            self.current_opcode = self.process_opcode(self.intcode[self.pointer])
+            self.dispatch_map[self.current_opcode[0]]()
+            
         if self.status in ('HALTED', 'WAITING'):
             # print("Current instruction pointer: ", self.pointer)
             return self.last_output
 
-    def run_instruction(self, opcode):
-        current_opcode = opcode[0]
-        parameter1_mode = opcode[1][0]
-        parameter2_mode = opcode[1][1]
-        #parameter3_mode = opcode[1][2]
+    def AddInstruction(self):
+        parameter1, parameter2, parameter3 = self.intcode[self.pointer+1:self.pointer+4]
+        parameter1_value = self.get_parameter_value(parameter1, self.current_opcode[1][0])
+        parameter2_value = self.get_parameter_value(parameter2, self.current_opcode[1][1])
+        self.intcode[parameter3] = parameter1_value + parameter2_value
+        self.pointer += 4
 
-        if self.debug:
-            print("Opcode: ", current_opcode)
-            print("Current instruction pointer: ", self.pointer)
-        if current_opcode == 99:
-            self.status = status_flags[1]
-        elif current_opcode == 3:
-            # get parameter
-            parameter = self.intcode[self.pointer+1]
-            next_input = self.get_next_input()
-            if next_input is None:
-                # set status to waiting and do not advance pointer!
-                self.status = status_flags[2]
-            else:
-                # we have input, so advance pointer and continue processing
-                self.intcode[parameter] = next_input
-                self.pointer += 2
-        elif current_opcode == 4:
-            # get parameter
-            parameter1 = self.intcode[self.pointer+1]
-            parameter1_value = self.get_parameter_value(parameter1, parameter1_mode)
-            self.last_output = parameter1_value
-            if self.debug:
-                print("Test output: ", parameter1_value)
+    def MultiplyInstruction(self):
+        parameter1, parameter2, parameter3 = self.intcode[self.pointer+1:self.pointer+4]
+        parameter1_value = self.get_parameter_value(parameter1, self.current_opcode[1][0])
+        parameter2_value = self.get_parameter_value(parameter2, self.current_opcode[1][1])
+        self.intcode[parameter3] = parameter1_value * parameter2_value
+        self.pointer += 4
+
+    def InputInstruction(self):
+        # get parameter
+        parameter = self.intcode[self.pointer+1]
+        next_input = self.get_next_input()
+        if next_input is None:
+            # set status to waiting and do not advance pointer!
+            self.status = status_flags[2]
+        else:
+            # we have input, so set parameter and advance pointer
+            self.intcode[parameter] = next_input
             self.pointer += 2
-        elif current_opcode == 5:
-            parameter1, parameter2 = self.intcode[self.pointer+1:self.pointer+3]
-            parameter1_value = self.get_parameter_value(parameter1, parameter1_mode)
-            parameter2_value = self.get_parameter_value(parameter2, parameter2_mode)
-            if parameter1_value != 0:
-                self.pointer = parameter2_value
-            else:
-                self.pointer += 3
-        elif current_opcode == 6:
-            parameter1, parameter2 = self.intcode[self.pointer+1:self.pointer+3]
-            parameter1_value = self.get_parameter_value(parameter1, parameter1_mode)
-            parameter2_value = self.get_parameter_value(parameter2, parameter2_mode)
-            if parameter1_value == 0:
-                self.pointer = parameter2_value
-            else:
-                self.pointer += 3
-        elif current_opcode in [1, 2, 7, 8]:
-            # get three parameters for addition/multiplication
-            parameter1, parameter2, parameter3 = self.intcode[self.pointer+1:self.pointer+4]
-            parameter1_value = self.get_parameter_value(parameter1, parameter1_mode)
-            parameter2_value = self.get_parameter_value(parameter2, parameter2_mode)
 
-            if current_opcode == 1:
-                self.intcode[parameter3] = parameter1_value + parameter2_value
-            elif current_opcode == 2:
-                self.intcode[parameter3] = parameter1_value * parameter2_value
-            elif current_opcode == 7:
-                self.intcode[parameter3] = 1 if parameter1_value < parameter2_value else 0
-            elif current_opcode == 8:
-                self.intcode[parameter3] = 1 if parameter1_value == parameter2_value else 0
-            self.pointer += 4
+    def OutputInstruction(self):
+        parameter1 = self.intcode[self.pointer+1]
+        parameter1_value = self.get_parameter_value(parameter1, self.current_opcode[1][0])
+        self.last_output = parameter1_value
+        self.pointer += 2
+
+    def JumpIfTrueInstruction(self):
+        parameter1, parameter2 = self.intcode[self.pointer+1:self.pointer+3]
+        parameter1_value = self.get_parameter_value(parameter1, self.current_opcode[1][0])
+        parameter2_value = self.get_parameter_value(parameter2, self.current_opcode[1][1])
+        if parameter1_value != 0:
+            self.pointer = parameter2_value
+        else:
+            self.pointer += 3
+
+    def JumpIfFalseInstruction(self):
+        parameter1, parameter2 = self.intcode[self.pointer+1:self.pointer+3]
+        parameter1_value = self.get_parameter_value(parameter1, self.current_opcode[1][0])
+        parameter2_value = self.get_parameter_value(parameter2, self.current_opcode[1][1])
+        if parameter1_value == 0:
+            self.pointer = parameter2_value
+        else:
+            self.pointer += 3
+
+    def LessThanInstruction(self):
+        parameter1, parameter2, parameter3 = self.intcode[self.pointer+1:self.pointer+4]
+        parameter1_value = self.get_parameter_value(parameter1, self.current_opcode[1][0])
+        parameter2_value = self.get_parameter_value(parameter2, self.current_opcode[1][1])
+        self.intcode[parameter3] = 1 if parameter1_value < parameter2_value else 0
+        self.pointer += 4
+
+    def EqualsInstruction(self):
+        parameter1, parameter2, parameter3 = self.intcode[self.pointer+1:self.pointer+4]
+        parameter1_value = self.get_parameter_value(parameter1, self.current_opcode[1][0])
+        parameter2_value = self.get_parameter_value(parameter2, self.current_opcode[1][1])
+        self.intcode[parameter3] = 1 if parameter1_value == parameter2_value else 0
+        self.pointer += 4
+
+    def HaltInstruction(self):
+        self.status = status_flags[1]
